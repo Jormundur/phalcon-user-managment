@@ -83,8 +83,9 @@ class UsersController extends ControllerBase
             }
             if (!empty($_POST['role'])) {
                 $role = $_POST['role'];
-                $user->setIdrole(2);
+
             }
+            $user->setIdrole(2);//provisoire
             $user->save();
         }
 

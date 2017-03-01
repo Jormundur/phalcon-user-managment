@@ -11,7 +11,7 @@
 <table class="ui celled table">
     <tr>
         <td>
-            Prénom</br>
+            <b>Prénom</b></br>
             <div class="ui input focus">
                 <input type="text">
             </div>
