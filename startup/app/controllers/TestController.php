@@ -37,7 +37,20 @@ class TestController extends ControllerBase{
         $gbt->getItem(1)->setProperty("data-ajax","page2");
         $gbt->getOnCLick("test","#contpage",["attr"=>"data-ajax"]);
 
-        $gbt->getItem(0)->setProperty("mouseover","");
+        $mbt1=$semantic->htmlButton("mobt1","Hello");
+        $mbt2=$semantic->htmlButton("mobt2","Bonjour");
+
+        $mbt1->setProperty("data-description","Description du bouton 1!");
+        $mbt2->setProperty("data-description","Description du bouton 2!");
+
+        $loadbt=$semantic->htmlButton("btload","Chargement");
+        $loadbt->setProperty("data-ajax","page3");
+        $loadbt->getOnCLick("test","#page3",["attr"=>"data-ajax"]);
+
+        $mbt1->on("mouseover",$this->jquery->html("#contpage",$mbt1->getProperty("data-description")));
+        $mbt2->on("mouseover",$this->jquery->html("#contpage",$mbt2->getProperty("data-description")));
+
+
         $this->jquery->compile($this->view);
 
     }
@@ -50,5 +63,31 @@ class TestController extends ControllerBase{
         echo "Page 2 !";
     }
 
+    public function page3Action(){
+        $this->view->disable;
+        echo "Lucas est moche";
+        echo "<div id=\"page4\"></div>";
+
+        $this->jquery->get("test/page4","#page4");
+        echo $this->jquery->compile();
+
+    }
+
+    public function page4Action(){
+        $this->view->disable();
+        echo " Mais on l'aime bien quand même";
+    }
+
+    public function postFormAction(){
+        $semantic=$this->jquery->semantic();
+        $form=$semantic->htmlForm("frm1");
+        $form->addErrorMessage();
+        $form->addInput("firstname","First Name")->addRule("empty");
+        $form->addInput("lastname","Last Name")->addRules(["empty","minLength[6]"]);
+        $form->addCheckbox("ckAgree","I agree to the Terms and Conditions",NULL,"toggle")->addRule("checked");
+        $form->addButton("btSubmit1","Submit")->asSubmit();
+        $form->submitOn("click","btSubmit1","test","#response");
+        echo $this->jquery->compile($this->view);
+    }
 }
 

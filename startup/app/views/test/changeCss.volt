@@ -1,5 +1,7 @@
-{{ q["group"] }}
-<div id="descpage"></div>
+{{ q["btload"] }}
+{{ q["mobt1"] }}
 
-<div id="contpage"></div>
+<div id="page3"></div>
+
+
 {{ script_foot }}
