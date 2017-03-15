@@ -6,7 +6,7 @@
 
 [![Build Status](https://scrutinizer-ci.com/g/phpMv/phpMv-UI/badges/build.png?b=master)](https://scrutinizer-ci.com/g/phpMv/phpMv-UI/build-status/master) [![Latest Stable Version](https://poser.pugx.org/phpmv/php-mv-ui/v/stable)](https://packagist.org/packages/phpmv/php-mv-ui) [![Total Downloads](https://poser.pugx.org/phpmv/php-mv-ui/downloads)](https://packagist.org/packages/phpmv/php-mv-ui) [![License](https://poser.pugx.org/phpmv/php-mv-ui/license)](https://packagist.org/packages/phpmv/php-mv-ui)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/phpMv/phpMv-UI/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/phpMv/phpMv-UI/?branch=master)
-[![Documentation](https://codedocs.xyz/phpMv/phpMv-UI.svg)](https://codedocs.xyz/phpMv/phpMv-UI/)
+[![Documentation](https://codedocs.xyz/phpMv/phpMv-UI.svg)](http://api.kobject.net/phpMv-UI/)
 <a href="http://phalconist.com/phpMv/phpMv-UI" target="_blank">
 ![phpMv-UI toolkit](http://phalconist.com/phpMv/phpMv-UI/default.svg)
 </a>
@@ -26,7 +26,7 @@ Using the dependency injection, the jQuery object can be injected into **php fra
 * Semantic-UI >= 2.2 [optional]
 
 ##Resources
-* [API](https://codedocs.xyz/phpMv/phpMv-UI/)
+* [API](http://api.kobject.net/phpMv-UI/)
 * [Documentation/demo](http://phpmv-ui.kobject.net/)
 
 ##I - Installation
@@ -69,7 +69,7 @@ Whatever the php framework used, with "composer", it is enough to integrate the 
 require_once("vendor/autoload.php");
 ```
 ### <img src="http://angular.kobject.net/git/images/phalcon.png" width="30"> Phalcon configuration
-<button>see</button>
+
 ####Library loading
 Without Composer, It is possible to load the library with the **app/config/loader.php** file :
 
@@ -97,9 +97,9 @@ Example of creating a Semantic-UI button
 ```php
 use Phalcon\Mvc\Controller;
 use Ajax\php\phalcon\JsUtils;
-/**
- * @property JsUtils $jquery
-**/
+    /**
+     * @property JsUtils $jquery
+    **/
 class ExempleController extends Controller{
 	public function indexAction(){
 		$semantic=$this->jquery->semantic();
@@ -108,6 +108,7 @@ class ExempleController extends Controller{
 	}
 }
 ```
+
 ### <img src="http://angular.kobject.net/git/images/ci.png" width="30"> CodeIgniter configuration
 ####Library loading
 If you want CodeIgniter to use a Composer auto-loader, just set `$config['composer_autoload']` to `TRUE` or a custom path in **application/config/config.php**.

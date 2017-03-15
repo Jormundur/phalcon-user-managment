@@ -146,10 +146,6 @@ class HtmlMenu extends HtmlSemCollection {
 		return $itemO;
 	}
 
-	public function setInverted() {
-		return $this->addToProperty("class", "inverted");
-	}
-
 	public function setSecondary($value=true) {
 		if($value)
 			$this->addToProperty("class", "secondary");
@@ -235,7 +231,13 @@ class HtmlMenu extends HtmlSemCollection {
 		return $this->_itemHeader;
 	}
 
+	public function setHasContainer(){
+		return $this->wrapContent("<div class='ui container'>","</div>");
+	}
+
 	public function run(JsUtils $js){
+		if($this->identifier!=="" && !isset($this->_bsComponent))
+			$this->onClick('if(!$(this).hasClass("dropdown")&&!$(this).hasClass("no-active")){$(this).addClass("active").siblings().removeClass("active");}',false,false);
 		$result= parent::run($js);
 		return $result->setItemSelector(".item");
 	}

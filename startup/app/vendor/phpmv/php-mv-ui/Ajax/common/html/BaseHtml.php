@@ -21,6 +21,7 @@ abstract class BaseHtml extends BaseWidget {
 	protected $_wrapBefore=array ();
 	protected $_wrapAfter=array ();
 	protected $_bsComponent;
+	protected $_compiled=false;
 
 	/**
 	 *
@@ -103,6 +104,7 @@ abstract class BaseHtml extends BaseWidget {
 
 	protected function _getElementBy($callback,$elements){
 		if (\is_array($elements)) {
+			$elements=\array_values($elements);
 			$flag=false;
 			$index=0;
 			while ( !$flag && $index < sizeof($elements) ) {
@@ -186,7 +188,20 @@ abstract class BaseHtml extends BaseWidget {
 		return $this;
 	}
 
+	protected function compile_once(JsUtils $js=NULL, &$view=NULL) {
+		if(!$this->_compiled){
+			if(isset($js)){
+				$beforeCompile=$js->getParam("beforeCompileHtml");
+				if(\is_callable($beforeCompile)){
+					$beforeCompile($this,$js,$view);
+				}
+			}
+			$this->_compiled=true;
+		}
+	}
+
 	public function compile(JsUtils $js=NULL, &$view=NULL) {
+		$this->compile_once($js,$view);
 		$result=$this->getTemplate($js);
 		foreach ( $this as $key => $value ) {
 			if (JString::startswith($key, "_") === false && $key !== "events") {

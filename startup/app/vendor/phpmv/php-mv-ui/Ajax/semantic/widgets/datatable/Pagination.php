@@ -7,16 +7,18 @@ class Pagination {
 	private $visible;
 	private $page_count;
 	private $pages_visibles;
+	private $row_count;
 
-	public function __construct($items_per_page=10,$pages_visibles=4,$page=1){
+	public function __construct($items_per_page=10,$pages_visibles=null,$page=1,$row_count=null){
 		$this->items_per_page=$items_per_page;
+		$this->row_count=$row_count;
 		$this->page=$page;
-		$this->pages_visibles=$pages_visibles;
+		$this->setPagesVisibles($pages_visibles);
 		$this->visible=true;
 	}
 
 	public function getObjects($objects){
-		$offset = ($this->page - 1) * $this->items_per_page;
+		$auto=(!isset($this->row_count));
 		$os=$objects;
 		if(!\is_array($os)){
 			$os=[];
@@ -25,7 +27,7 @@ class Pagination {
 			}
 		}
 		$this->page_count = 0;
-		$row_count=\sizeof($os);
+		$row_count=($auto)?\sizeof($os):$this->row_count;
 		if (0 === $row_count) {
 			$this->visible=false;
 		} else {
@@ -35,7 +37,11 @@ class Pagination {
 				$this->page = 1;
 			}
 		}
-		return array_slice($os, $offset,$this->items_per_page);
+		if($auto){
+			$offset = ($this->page - 1) * $this->items_per_page;
+			return array_slice($os, $offset,$this->items_per_page);
+		}
+		return $os;
 	}
 
 	public function getItemsPerPage() {
@@ -81,5 +87,13 @@ class Pagination {
 		}
 		return \range($first, $last);
 	}
+
+	public function setPagesVisibles($pages_visibles) {
+		if(!isset($pages_visibles))
+			$pages_visibles=(int)ceil($this->row_count / $this->items_per_page)+1;
+		$this->pages_visibles=$pages_visibles;
+		return $this;
+	}
+
 
 }

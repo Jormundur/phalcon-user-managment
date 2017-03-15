@@ -8,6 +8,7 @@ use Ajax\semantic\widgets\datatable\PositionInTable;
 use Ajax\service\JArray;
 use Ajax\JsUtils;
 use Ajax\semantic\html\elements\HtmlButton;
+use Ajax\semantic\html\base\traits\BaseTrait;
 
 /**
  * DataForm widget for editing model objects
@@ -17,6 +18,7 @@ use Ajax\semantic\html\elements\HtmlButton;
  * @property FormInstanceViewer $_instanceViewer
  */
 class DataForm extends Widget {
+	use BaseTrait;
 
 	public function __construct($identifier, $modelInstance=NULL) {
 		parent::__construct($identifier, null,$modelInstance);
@@ -56,34 +58,40 @@ class DataForm extends Widget {
 		\sort($separators);
 		$size=\sizeof($separators);
 		if($size===1){
+			$i=-1;
 			foreach ($values as $v){
-				$form->addField($v);
+				$this->_generateFields($form, [$v], $headers, $i, $wrappers);
+				$i++;
 			}
 		}else{
 			$separators[]=$count;
 			for($i=0;$i<$size;$i++){
-				$wrapper=null;
 				$fields=\array_slice($values, $separators[$i]+1,$separators[$i+1]-$separators[$i]);
-				if(isset($headers[$separators[$i]+1]))
-					$form->addHeader($headers[$separators[$i]+1],4,true);
-				if(isset($wrappers[$separators[$i]+1])){
-					$wrapper=$wrappers[$separators[$i]+1];
-				}
-				//TODO check why $fields is empty
-				if(\sizeof($fields)===1){
-					$added=$form->addField($fields[0]);
-				}elseif(\sizeof($fields)>1){
-					$added=$form->addFields($fields);
-				}
-				if(isset($wrapper))
-					$added->wrap($wrapper[0],$wrapper[1]);
+				$this->_generateFields($form, $fields, $headers, $separators[$i], $wrappers);
 			}
 		}
 	}
 
+	protected function _generateFields($form,$values,$headers,$sepFirst,$wrappers){
+		$wrapper=null;
+		if(isset($headers[$sepFirst+1]))
+			$form->addHeader($headers[$sepFirst+1],4,true);
+		if(isset($wrappers[$sepFirst+1])){
+			$wrapper=$wrappers[$sepFirst+1];
+		}
+		if(\sizeof($values)===1){
+			$added=$form->addField($values[0]);
+		}elseif(\sizeof($values)>1){
+			$added=$form->addFields($values);
+		}else
+			return;
+		if(isset($wrapper)){
+			$added->wrap($wrapper[0],$wrapper[1]);
+		}
+	}
+
 	/**
-	 * {@inheritDoc}
-	 * @see \Ajax\common\Widget::getForm()
+	 * @return HtmlForm
 	 */
 	public function getForm(){
 		return $this->content["form"];

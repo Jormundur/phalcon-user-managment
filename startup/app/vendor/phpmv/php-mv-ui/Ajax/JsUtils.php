@@ -166,6 +166,10 @@ abstract class JsUtils{
 		return $this->config;
 	}
 
+	/**
+	 * @param array $params ['driver'=>'jquery','debug'=>true,'defer'=>false,'ajaxTransition'=>null,'beforeCompileHtml'=>null]
+	 * @param mixed $injected optional param for Symfony
+	 */
 	public function __construct($params=array(),$injected=NULL) {
 		$defaults=['driver'=>'Jquery','debug'=>true,'defer'=>false,'ajaxTransition'=>null];
 		foreach ( $defaults as $key => $val ) {
@@ -177,6 +181,9 @@ abstract class JsUtils{
 
 		if(\array_key_exists("semantic", $params)){
 			$this->semantic(new Semantic());
+		}
+		if(\array_key_exists("bootstrap", $params)){
+			$this->bootstrap(new Bootstrap());
 		}
 		$this->cdns=array ();
 		$this->params=$params;
@@ -199,8 +206,12 @@ abstract class JsUtils{
 		}
 	}
 
+	/**
+	 * @param string $key
+	 */
 	public function getParam($key){
-		return $this->params[$key];
+		if(isset($this->params[$key]))
+			return $this->params[$key];
 	}
 
 	public function addToCompile($jsScript) {
@@ -254,6 +265,14 @@ abstract class JsUtils{
 	 */
 	public function clear_compile() {
 		$this->js->_clear_compile();
+	}
+
+	public function getScript($offset=0){
+		return $this->js->getScript($offset);
+	}
+
+	public function scriptCount(){
+		return $this->js->scriptCount();
 	}
 
 	/**

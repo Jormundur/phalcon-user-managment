@@ -7,10 +7,12 @@ use Ajax\semantic\html\base\constants\Color;
 use Ajax\semantic\html\base\constants\Direction;
 use Ajax\semantic\html\elements\HtmlIcon;
 use Ajax\service\JString;
+use Ajax\semantic\html\base\HtmlSemDoubleElement;
 
 /**
  * @author jc
  * @property string $identifier
+ * @property HtmlSemDoubleElement $_self
  */
 trait BaseTrait {
 	protected $_variations=[ ];
@@ -32,38 +34,38 @@ trait BaseTrait {
 	abstract public function onCreate($jsCode);
 
 	public function addVariation($variation) {
-		return $this->addToPropertyCtrlCheck("class", $variation, $this->_variations);
+		return $this->_self->addToPropertyCtrlCheck("class", $variation, $this->_self->_variations);
 	}
 
 	public function addState($state) {
-		return $this->addToPropertyCtrlCheck("class", $state, $this->_states);
+		return $this->_self->addToPropertyCtrlCheck("class", $state, $this->_self->_states);
 	}
 
 	public function setVariation($variation) {
-		$this->setPropertyCtrl("class", $variation, $this->_variations);
-		return $this->addToProperty("class", $this->_baseClass);
+		$this->_self->setPropertyCtrl("class", $variation, $this->_self->_variations);
+		return $this->_self->addToProperty("class", $this->_self->_baseClass);
 	}
 
 	public function setVariations($variations) {
-		$this->setProperty("class", $this->_baseClass);
+		$this->_self->setProperty("class", $this->_self->_baseClass);
 		if (\is_string($variations))
 			$variations=\explode(" ", $variations);
 		foreach ( $variations as $variation ) {
-			$this->addVariation($variation);
+			$this->_self->addVariation($variation);
 		}
 		return $this;
 	}
 
 	public function setState($state) {
-		$this->setPropertyCtrl("class", $state, $this->_states);
-		return $this->addToProperty("class", $this->_baseClass);
+		$this->_self->setPropertyCtrl("class", $state, $this->_self->_states);
+		return $this->_self->addToProperty("class", $this->_self->_baseClass);
 	}
 
 	public function addVariations($variations=array()) {
 		if (\is_string($variations))
 			$variations=\explode(" ", $variations);
 		foreach ( $variations as $variation ) {
-			$this->addVariation($variation);
+			$this->_self->addVariation($variation);
 		}
 		return $this;
 	}
@@ -72,27 +74,27 @@ trait BaseTrait {
 		if (\is_string($states))
 			$states=\explode(" ", $states);
 		foreach ( $states as $state ) {
-			$this->addState($state);
+			$this->_self->addState($state);
 		}
 		return $this;
 	}
 
 	public function setStates($states) {
-		$this->setProperty("class", $this->_baseClass);
+		$this->_self->setProperty("class", $this->_self->_baseClass);
 		if (\is_string($states))
 			$states=\explode(" ", $states);
 		foreach ( $states as $state ) {
-			$this->addState($state);
+			$this->_self->addState($state);
 		}
 		return $this;
 	}
 
 	public function addIcon($icon, $before=true) {
-		return $this->addContent(new HtmlIcon("icon-" . $this->identifier, $icon), $before);
+		return $this->_self->addContent(new HtmlIcon("icon-" . $this->_self->identifier, $icon), $before);
 	}
 
 	public function addSticky($context="body"){
-		$this->onCreate("$('#".$this->identifier."').sticky({ context: '".$context."'});");
+		$this->_self->onCreate("$('#".$this->_self->identifier."').sticky({ context: '".$context."'});");
 		return $this;
 	}
 
@@ -103,86 +105,98 @@ trait BaseTrait {
 	 * @see \Ajax\common\html\HtmlSingleElement::setSize()
 	 */
 	public function setSize($size) {
-		return $this->addToPropertyCtrl("class", $size, Size::getConstants());
+		return $this->_self->addToPropertyCtrl("class", $size, Size::getConstants());
 	}
 
 	/**
 	 * show it is currently unable to be interacted with
 	 * @param boolean $disable
-	 * @return \Ajax\semantic\html\elements\HtmlSemDoubleElement
+	 * @return HtmlSemDoubleElement
 	 */
 	public function setDisabled($disable=true) {
 		if($disable)
-			$this->addToProperty("class", "disabled");
+			$this->_self->addToProperty("class", "disabled");
 		return $this;
 	}
 
 	/**
 	 *
 	 * @param string $color
-	 * @return \Ajax\semantic\html\base\HtmlSemDoubleElement
+	 * @return HtmlSemDoubleElement
 	 */
 	public function setColor($color) {
-		return $this->addToPropertyCtrl("class", $color, Color::getConstants());
+		return $this->_self->addToPropertyCtrl("class", $color, Color::getConstants());
 	}
 
 	/**
 	 *
-	 * @return \Ajax\semantic\html\base\HtmlSemDoubleElement
+	 * @return HtmlSemDoubleElement
 	 */
 	public function setFluid() {
-		return $this->addToProperty("class", "fluid");
+		return $this->_self->addToProperty("class", "fluid");
 	}
 
 	/**
 	 *
-	 * @return \Ajax\semantic\html\base\HtmlSemDoubleElement
+	 * @return HtmlSemDoubleElement
 	 */
 	public function asHeader(){
-		return $this->addToProperty("class", "header");
+		return $this->_self->addToProperty("class", "header");
 	}
 
 	/**
 	 * show it is currently the active user selection
-	 * @return \Ajax\semantic\html\base\HtmlSemDoubleElement
+	 * @return HtmlSemDoubleElement
 	 */
 	public function setActive($value=true){
 		if($value)
-			$this->addToProperty("class", "active");
+			$this->_self->addToProperty("class", "active");
 		return $this;
 	}
 
 	public function setAttached($value=true){
 		if($value)
-			$this->addToPropertyCtrl("class", "attached", array ("attached" ));
+			$this->_self->addToPropertyCtrl("class", "attached", array ("attached" ));
 		return $this;
 	}
 
 	/**
 	 * can be formatted to appear on dark backgrounds
 	 */
-	public function setInverted() {
-		return $this->addToProperty("class", "inverted");
+	public function setInverted($recursive=true) {
+		if($recursive===true){
+			$content=$this->_self->getContent();
+			if($content instanceof HtmlSemDoubleElement)
+				$content->setInverted($recursive);
+			elseif(\is_array($content) || $content instanceof \Traversable){
+				foreach ($content as $elm){
+					if($elm instanceof  HtmlSemDoubleElement){
+						$elm->setInverted($recursive);
+					}
+				}
+			}
+		}
+		return $this->_self->addToProperty("class", "inverted");
 	}
 
 	public function setCircular() {
-		return $this->addToProperty("class", "circular");
+		return $this->_self->addToProperty("class", "circular");
 	}
 
 	public function setFloated($direction="right") {
-		return $this->addToPropertyCtrl("class", $direction . " floated", Direction::getConstantValues("floated"));
+		return $this->_self->addToPropertyCtrl("class", $direction . " floated", Direction::getConstantValues("floated"));
 	}
 
 	public function floatRight() {
-		return $this->setFloated();
+		return $this->_self->setFloated();
 	}
 
 	public function floatLeft() {
-		return $this->setFloated("left");
+		return $this->_self->setFloated("left");
 	}
 
 	public function getBaseClass() {
-		return $this->_baseClass;
+		return $this->_self->_baseClass;
 	}
 
 	protected function addBehavior(&$array,$key,$value,$before="",$after=""){
@@ -192,8 +206,31 @@ trait BaseTrait {
 				$array[$key]=$before.$p.$value.$after;
 			}else
 				$array[$key]=$before.$value.$after;
-		}else
+		}else{
 			$array[$key]=$value;
+		}
 		return $this;
 	}
+	/*
+	 protected function addBehavior(&$array,$key,$value,$before="",$after=""){
+	 echo $key.":".$this->_self->identifier."<br>";
+
+	 if(\is_string($value)){
+	 if(isset($array[$key])){
+	 $p=JString::replaceAtFirstAndLast($array[$key], $before, "", $after, "");
+	 $array[$key]=$before.$p.$value.$after;
+	 }else
+	 	$array[$key]=$before.$value.$after;
+	 	}else{
+	 	if(isset($array[$key])){
+	 	if(!\is_array($array[$key])){
+	 	$array[$key]=[$array[$key]];
+	 	}
+	 	$array[$key][]=$value;
+	 	}else{
+	 	$array[$key]=$value;
+	 	}
+	 	}
+	 	return $this;
+	 	}*/
 }

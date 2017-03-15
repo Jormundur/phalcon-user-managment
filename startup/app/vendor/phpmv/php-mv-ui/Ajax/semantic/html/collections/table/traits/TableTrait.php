@@ -1,14 +1,19 @@
 <?php
 namespace Ajax\semantic\html\collections\table\traits;
 
+use Ajax\semantic\html\collections\table\HtmlTable;
+
+/**
+ * @author jc
+ * @property HtmlTable $_self
+ */
 trait TableTrait{
-	/**
-	 * @return HtmlTable
-	 */
-	abstract protected function getTable();
+
+	abstract public function addEvent($event, $jsCode, $stopPropagation=false, $preventDefault=false);
+	abstract public function getOn($event, $url, $responseElement="", $parameters=array());
 
 	protected function addToPropertyTable($property,$value){
-		return $this->getTable()->addToProperty($property, $value);
+		return $this->_self->addToProperty($property, $value);
 	}
 
 	public function setCelled() {
@@ -16,14 +21,14 @@ trait TableTrait{
 	}
 
 	public function setBasic($very=false) {
-		$table=$this->getTable();
+		$table=$this->_self;
 		if ($very)
 			$table->addToPropertyCtrl("class", "very", array ("very" ));
 		return $table->addToPropertyCtrl("class", "basic", array ("basic" ));
 	}
 
 	public function setCompact($very=false) {
-		$table=$this->getTable();
+		$table=$this->_self;
 		if ($very)
 			$table->addToPropertyCtrl("class", "very", array ("very" ));
 		return $table->addToPropertyCtrl("class", "compact", array ("compact" ));
@@ -42,7 +47,7 @@ trait TableTrait{
 	}
 
 	public function setSortable($colIndex=NULL) {
-		$table=$this->getTable();
+		$table=$this->_self;
 		if (isset($colIndex) && $table->hasPart("thead")) {
 			$table->getHeader()->sort($colIndex);
 		}
@@ -63,5 +68,18 @@ trait TableTrait{
 
 	public function setStriped() {
 		return $this->addToPropertyTable("class", "striped");
+	}
+
+	public function onRowClick($jsCode, $stopPropagation=false, $preventDefault=false){
+		$this->onRowClick($jsCode,$stopPropagation,$preventDefault);
+	}
+
+	public function onRow($event,$jsCode, $stopPropagation=false, $preventDefault=false){
+		$this->_self->addEvent($event."{{tr}}",$jsCode,$stopPropagation,$preventDefault);
+	}
+
+	public function getOnRow($event, $url, $responseElement="", $parameters=array()){
+		$parameters=\array_merge($parameters,["stopPropagation"=>false,"preventDefault"=>false]);
+		return $this->_self->getOn($event."{{tbody tr}}", $url,$responseElement,$parameters);
 	}
 }

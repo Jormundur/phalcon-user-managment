@@ -17,6 +17,8 @@ use Ajax\semantic\html\collections\HtmlMessage;
 use Ajax\semantic\html\elements\HtmlButton;
 use Ajax\service\JArray;
 use Ajax\semantic\html\elements\html5\HtmlLink;
+use Ajax\semantic\html\elements\HtmlFlag;
+use Ajax\common\html\BaseHtml;
 
 /**
  * trait used in Widget
@@ -31,18 +33,18 @@ trait FieldAsTrait{
 	abstract public function setValueFunction($index,$callback);
 	abstract protected function _getFieldName($index);
 	abstract protected function _getFieldCaption($index);
-	abstract protected function _buttonAsSubmit(HtmlButton &$button,$event,$url,$responseElement=NULL,$parameters=NULL);
+	abstract protected function _buttonAsSubmit(BaseHtml &$button,$event,$url,$responseElement=NULL,$parameters=NULL);
 
 	/**
 	 * @param HtmlFormField $element
 	 * @param array $attributes
 	 */
 	protected function _applyAttributes($element,&$attributes,$index){
-		if(isset($attributes["callback"])){
-			$callback=$attributes["callback"];
+		if(isset($attributes["jsCallback"])){
+			$callback=$attributes["jsCallback"];
 			if(\is_callable($callback)){
 				$callback($element,$this->_modelInstance,$index);
-				unset($attributes["callback"]);
+				unset($attributes["jsCallback"]);
 			}
 		}
 		unset($attributes["rules"]);
@@ -112,12 +114,13 @@ trait FieldAsTrait{
 			return $this;
 	}
 
-	public function fieldAsLabel($index,$icon=NULL){
-		$this->setValueFunction($index,function($caption) use($icon){
-			$lbl=$this->_getLabelField($caption,$icon);
-			return $lbl;
-		});
-			return $this;
+	public function fieldAsLabel($index,$icon=NULL,$attributes=NULL){
+		return $this->_fieldAs(function($id,$name,$value) use($icon){
+			$lbl=new HtmlLabel($id,$value);
+			if(isset($icon))
+				$lbl->addIcon($icon);
+				return $lbl;
+		}, $index,$attributes,"label");
 	}
 
 	public function fieldAsHeader($index,$niveau=1,$icon=NULL,$attributes=NULL){
@@ -138,6 +141,14 @@ trait FieldAsTrait{
 			return $this;
 	}
 
+	public function fieldAsFlag($index){
+		$this->setValueFunction($index,function($flag){
+			$flag=new HtmlFlag($this->_getFieldIdentifier("flag"),$flag);
+			return $flag;
+		});
+			return $this;
+	}
+
 	public function fieldAsAvatar($index,$attributes=NULL){
 		return $this->_fieldAs(function($id,$name,$value){
 			$img=new HtmlImage($id,$value);
@@ -147,9 +158,9 @@ trait FieldAsTrait{
 	}
 
 	public function fieldAsRadio($index,$attributes=NULL){
-		return $this->_fieldAs(function($id,$name,$value){
+		return $this->_fieldAs(function($id,$name,$value) use($attributes){
 			$input= new HtmlRadio($id,$name,$value,$value);
-			return $input;
+			return $this->_prepareFormFields($input, $name, $attributes);
 		}, $index,$attributes,"radio");
 	}
 
@@ -167,10 +178,9 @@ trait FieldAsTrait{
 	}
 
 	public function fieldAsTextarea($index,$attributes=NULL){
-		return $this->_fieldAs(function($id,$name,$value,$caption){
+		return $this->_fieldAs(function($id,$name,$value,$caption) use ($attributes){
 			$textarea=new HtmlFormTextarea($id,$caption,$value);
-			$textarea->setName($name);
-			return $textarea;
+			return $this->_prepareFormFields($textarea, $name, $attributes);
 		}, $index,$attributes,"textarea");
 	}
 
@@ -178,24 +188,23 @@ trait FieldAsTrait{
 		if(!\is_array($attributes)){
 			$attributes=[];
 		}
-		$attributes["imputType"]="hidden";
+		$attributes["inputType"]="hidden";
 		return $this->fieldAsInput($index,$attributes);
 	}
 
 	public function fieldAsCheckbox($index,$attributes=NULL){
-		return $this->_fieldAs(function($id,$name,$value,$caption){
+		return $this->_fieldAs(function($id,$name,$value,$caption) use($attributes){
 			$input=new HtmlFormCheckbox($id,$caption,$this->_instanceViewer->getIdentifier());
 			$input->setChecked(JString::isBooleanTrue($value));
-			$input->setName($name);
-			return $input;
+			return $this->_prepareFormFields($input, $name, $attributes);
 		}, $index,$attributes,"ck");
 	}
 
 	public function fieldAsDropDown($index,$elements=[],$multiple=false,$attributes=NULL){
-		return $this->_fieldAs(function($id,$name,$value,$caption) use($elements,$multiple){
+		return $this->_fieldAs(function($id,$name,$value,$caption) use($elements,$multiple,$attributes){
 			$dd=new HtmlFormDropdown($id,$elements,$caption,$value);
 			$dd->asSelect($name,$multiple);
-			return $dd;
+			return $this->_prepareFormFields($dd, $name, $attributes);
 		}, $index,$attributes,"dd");
 	}
 

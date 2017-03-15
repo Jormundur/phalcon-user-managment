@@ -28,11 +28,15 @@ class HtmlDropdown extends HtmlSemDoubleElement {
 		parent::__construct($identifier, "div");
 		$this->_template=include dirname(__FILE__).'/../templates/tplDropdown.php';
 		$this->setProperty("class", "ui dropdown");
-		$content=new HtmlSemDoubleElement("text-".$this->identifier,"div");
-		$content->setClass("text");
-		$this->setValue($value);
-		$content->wrap("",new HtmlIcon("", "dropdown"));
-		$this->content=array($content);
+		$content=[];
+		if(isset($value)){
+			$text=new HtmlSemDoubleElement("text-".$this->identifier,"div");
+			$text->setClass("text");
+			$content=[$text];
+			$this->setValue($value);
+		}
+		$content["arrow"]=new HtmlIcon("", "dropdown");
+		$this->content=$content;
 		$this->tagName="div";
 		$this->_associative=$associative;
 		$this->addItems($items);
@@ -53,6 +57,7 @@ class HtmlDropdown extends HtmlSemDoubleElement {
 	}
 
 	public function addIcon($icon,$before=true,$labeled=false){
+		$this->removeArrow();
 		$this->addIconP($icon,$before,$labeled);
 		return $this->getElementById("text-".$this->identifier, $this->content)->setWrapAfter("");
 	}
@@ -77,6 +82,13 @@ class HtmlDropdown extends HtmlSemDoubleElement {
 		 $start[] = $item;
 		 $this->items=array_merge($start, $end);
 		 return $itemO;
+	}
+
+	protected function removeArrow(){
+		if(\sizeof($this->content)>1){
+			unset($this->content["arrow"]);
+			$this->content=\array_values($this->content);
+		}
 	}
 
 	protected function beforeAddItem($item,$value=NULL,$image=NULL,$description=NULL){
@@ -205,6 +217,7 @@ class HtmlDropdown extends HtmlSemDoubleElement {
 	}
 
 	public function asButton($floating=false){
+		$this->removeArrow();
 		if($floating)
 			$this->addToProperty("class", "floating");
 		$this->removePropertyValue("class", "selection");
@@ -281,8 +294,10 @@ class HtmlDropdown extends HtmlSemDoubleElement {
 	 */
 	public function run(JsUtils $js) {
 		if($this->propertyContains("class", "simple")===false){
-			if(isset($this->_bsComponent)===false)
+			if(isset($this->_bsComponent)===false){
 				$this->_bsComponent=$js->semantic()->dropdown("#".$this->identifier,$this->_params);
+				$this->_bsComponent->setItemSelector(".item");
+			}
 			$this->addEventsOnRun($js);
 			return $this->_bsComponent;
 		}
@@ -308,5 +323,12 @@ class HtmlDropdown extends HtmlSemDoubleElement {
 	public function getInput() {
 		return $this->input;
 	}
+	public function addAction($action, $direction=Direction::RIGHT, $icon=NULL, $labeled=false) {
+		return $this->_addAction($this, $action,$direction,$icon,$labeled);
+	}
 
+	public function jsAddItem($caption){
+		$js="var first=$('#{$this->identifier} .item').first();if(first!=undefined){var new =first.clone();first.parent().append(new);first.html('{$caption}};')";
+		return $js;
+	}
 }

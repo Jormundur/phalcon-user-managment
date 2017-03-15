@@ -152,6 +152,12 @@ abstract class HtmlCollection extends HtmlDoubleElement {
 		return $this;
 	}
 
+	/**
+	 * Sets the values of a property for each item in the collection
+	 * @param string $property
+	 * @param array $values
+	 * @return HtmlCollection
+	 */
 	public function setPropertyValues($property,$values){
 		$i=0;
 		if(\is_array($values)===false){
@@ -176,5 +182,9 @@ abstract class HtmlCollection extends HtmlDoubleElement {
 			$this->setItemIdentifier($item,$classname,$index++);
 		}
 		return parent::compile($js,$view);
+	}
+
+	public function getItemById($identifier){
+		return $this->getElementById($identifier, $this->content);
 	}
 }

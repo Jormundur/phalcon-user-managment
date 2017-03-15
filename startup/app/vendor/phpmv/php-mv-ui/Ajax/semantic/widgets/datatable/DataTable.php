@@ -12,6 +12,9 @@ use Ajax\semantic\html\base\constants\Direction;
 use Ajax\service\JArray;
 use Ajax\semantic\widgets\base\InstanceViewer;
 use Ajax\semantic\html\collections\table\traits\TableTrait;
+use Ajax\semantic\html\collections\HtmlMessage;
+use Ajax\semantic\html\collections\menus\HtmlMenu;
+use Ajax\semantic\html\base\traits\BaseTrait;
 
 /**
  * DataTable widget for displaying list of objects
@@ -21,7 +24,7 @@ use Ajax\semantic\html\collections\table\traits\TableTrait;
  *
  */
 class DataTable extends Widget {
-	use TableTrait,DataTableFieldAsTrait,HasCheckboxesTrait;
+	use TableTrait,DataTableFieldAsTrait,HasCheckboxesTrait,BaseTrait;
 	protected $_searchField;
 	protected $_urls;
 	protected $_pagination;
@@ -30,12 +33,21 @@ class DataTable extends Widget {
 	protected $_editBehavior;
 	protected $_visibleHover=false;
 	protected $_targetSelector;
+	protected $_refreshSelector;
+	protected $_emptyMessage;
+	protected $_json;
+	protected $_rowClass="";
+	protected $_sortable;
+	protected $_hiddenColumns;
+	protected $_colWidths;
 
 
 	public function __construct($identifier,$model,$modelInstance=NULL) {
 		parent::__construct($identifier, $model,$modelInstance);
 		$this->_init(new InstanceViewer($identifier), "table", new HtmlTable($identifier, 0,0), false);
 		$this->_urls=[];
+		$this->_emptyMessage=new HtmlMessage("","nothing to display");
+		$this->_emptyMessage->setIcon("info circle");
 	}
 
 	public function run(JsUtils $js){
@@ -75,15 +87,13 @@ class DataTable extends Widget {
 		if(!$this->_generated){
 			$this->_instanceViewer->setInstance($this->_model);
 			$captions=$this->_instanceViewer->getCaptions();
-
 			$table=$this->content["table"];
-
 			if($this->_hasCheckboxes){
 				$this->_generateMainCheckbox($captions);
 			}
-
 			$table->setRowCount(0, \sizeof($captions));
-			$table->setHeaderValues($captions);
+			$this->_generateHeader($table,$captions);
+
 			if(isset($this->_compileParts))
 				$table->setCompileParts($this->_compileParts);
 
@@ -98,17 +108,43 @@ class DataTable extends Widget {
 					$table->getHeader()->getCell(0, 0)->addClass("no-sort");
 			}
 
-			if(isset($this->_pagination) && $this->_pagination->getVisible()){
-				$this->_generatePagination($table);
-			}
 			if(isset($this->_toolbar)){
 				$this->_setToolbarPosition($table, $captions);
 			}
+			if(isset($this->_pagination) && $this->_pagination->getVisible()){
+				$this->_generatePagination($table,$js);
+			}
+
 			$this->content=JArray::sortAssociative($this->content, [PositionInTable::BEFORETABLE,"table",PositionInTable::AFTERTABLE]);
 			$this->_compileForm();
+			$this->_applyStyleAttributes($table);
 			$this->_generated=true;
 		}
 		return parent::compile($js,$view);
+	}
+
+	protected function _applyStyleAttributes($table){
+		if(isset($this->_hiddenColumns))
+			$this->_hideColumns();
+			if(isset($this->_colWidths)){
+				foreach ($this->_colWidths as $colIndex=>$width){
+					$table->setColWidth($colIndex,$width);
+				}
+			}
+	}
+
+	protected function _hideColumns(){
+		foreach ($this->_hiddenColumns as $colIndex){
+			$this->_self->hideColumn($colIndex);
+		}
+		return $this;
+	}
+
+	protected function _generateHeader(HtmlTable $table,$captions){
+		$table->setHeaderValues($captions);
+		if(isset($this->_sortable)){
+			$table->setSortable($this->_sortable);
+		}
 	}
 
 
@@ -118,38 +154,65 @@ class DataTable extends Widget {
 		if(isset($this->_pagination)){
 			$objects=$this->_pagination->getObjects($this->_modelInstance);
 		}
-		InstanceViewer::setIndex(0);
-		$table->fromDatabaseObjects($objects, function($instance) use($table){
-			$this->_instanceViewer->setInstance($instance);
-			InstanceViewer::$index++;
-			$values= $this->_instanceViewer->getValues();
-			if($this->_hasCheckboxes){
-				$ck=new HtmlCheckbox("ck-".$this->identifier,"");
-				$field=$ck->getField();
-				$field->setProperty("value",$this->_instanceViewer->getIdentifier());
-				$field->setProperty("name", "selection[]");
-				\array_unshift($values, $ck);
-			}
-			$result=$table->newRow();
-			$result->setIdentifier($this->identifier."-tr-".$this->_instanceViewer->getIdentifier());
-			$result->setValues($values);
-			return $result;
-		});
+			InstanceViewer::setIndex(0);
+			$table->fromDatabaseObjects($objects, function($instance) use($table){
+				return $this->_generateRow($instance, $table);
+			});
+		if($table->getRowCount()==0){
+			$result=$table->addRow();
+			$result->mergeRow();
+			$result->setValues([$this->_emptyMessage]);
+		}
 	}
 
-	private function _generatePagination($table){
+	protected function _generateRow($instance,&$table,$checkedClass=null){
+		$this->_instanceViewer->setInstance($instance);
+		InstanceViewer::$index++;
+		$values= $this->_instanceViewer->getValues();
+		$id=$this->_instanceViewer->getIdentifier();
+		if($this->_hasCheckboxes){
+			$ck=new HtmlCheckbox("ck-".$this->identifier."-".$id,"");
+			$ck->setOnChange("event.stopPropagation();");
+			$field=$ck->getField();
+			$field->setProperty("value",$id);
+			$field->setProperty("name", "selection[]");
+			if(isset($checkedClass))
+				$field->setClass($checkedClass);
+			\array_unshift($values, $ck);
+		}
+		$result=$table->newRow();
+		$result->setIdentifier($this->identifier."-tr-".$id);
+		$result->setProperty("data-ajax",$id);
+		$result->setValues($values);
+		$result->addToProperty("class",$this->_rowClass);
+		return $result;
+	}
+
+	protected function _generatePagination($table,$js=NULL){
+		if(isset($this->_toolbar)){
+			if($this->_toolbarPosition==PositionInTable::FOOTER)
+				$this->_toolbar->setFloated("left");
+		}
 		$footer=$table->getFooter();
 		$footer->mergeCol();
 		$menu=new HtmlPaginationMenu("pagination-".$this->identifier,$this->_pagination->getPagesNumbers());
 		$menu->floatRight();
 		$menu->setActiveItem($this->_pagination->getPage()-1);
-		$footer->setValues($menu);
-		if(isset($this->_urls["refresh"]))
-			$menu->postOnClick($this->_urls["refresh"],"{'p':$(this).attr('data-page')}","#".$this->identifier." tbody",["preventDefault"=>false,"jqueryDone"=>"replaceWith"]);
+		$footer->addValues($menu);
+		$this->_associatePaginationBehavior($menu,$js);
+	}
+
+	protected function _associatePaginationBehavior(HtmlMenu $menu,JsUtils $js=NULL){
+		if(isset($this->_urls["refresh"])){
+			$menu->postOnClick($this->_urls["refresh"],"{'p':$(this).attr('data-page')}",$this->getRefreshSelector(),["preventDefault"=>false,"jqueryDone"=>"replaceWith"]);
+		}
 	}
 
 	protected function _getFieldName($index){
-		return parent::_getFieldName($index)."[]";
+		$fieldName=parent::_getFieldName($index);
+		if(\is_object($fieldName))
+			$fieldName="field-".$index;
+		return $fieldName."[]";
 	}
 
 	protected function _getFieldCaption($index){
@@ -177,7 +240,7 @@ class DataTable extends Widget {
 	 * The $callback function can take the following arguments : $field=>the compiled field, $instance : the active instance of the object, $index: the field position
 	 * @param int $index postion of the compiled field
 	 * @param callable $callback function called after the field compilation
-	 * @return \Ajax\semantic\widgets\datatable\DataTable
+	 * @return DataTable
 	 */
 	public function afterCompile($index,$callback){
 		$this->_instanceViewer->afterCompile($index,$callback);
@@ -195,6 +258,11 @@ class DataTable extends Widget {
 		$row->setValues([$this->_toolbar]);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * @see Widget::getHtmlComponent()
+	 * @return HtmlTable
+	 */
 	public function getHtmlComponent(){
 		return $this->content["table"];
 	}
@@ -206,7 +274,7 @@ class DataTable extends Widget {
 	/**
 	 * Sets the associative array of urls for refreshing, updating or deleting
 	 * @param string|array $urls associative array with keys refresh: for refreshing with search field or pagination, edit : for updating a row, delete: for deleting a row
-	 * @return \Ajax\semantic\widgets\datatable\DataTable
+	 * @return DataTable
 	 */
 	public function setUrls($urls) {
 		if(\is_array($urls)){
@@ -219,12 +287,37 @@ class DataTable extends Widget {
 		return $this;
 	}
 
-	public function paginate($items_per_page=10,$page=1){
-		$this->_pagination=new Pagination($items_per_page,4,$page);
+	/**
+	 * Paginates the DataTable element with a Semantic HtmlPaginationMenu component
+	 * @param number $page the active page number
+	 * @param number $total_rowcount the total number of items
+	 * @param number $items_per_page The number of items per page
+	 * @param number $pages_visibles The number of visible pages in the Pagination component
+	 * @return DataTable
+	 */
+	public function paginate($page,$total_rowcount,$items_per_page=10,$pages_visibles=null){
+		$this->_pagination=new Pagination($items_per_page,$pages_visibles,$page,$total_rowcount);
+		return $this;
+	}
+
+	/**
+	 * Auto Paginates the DataTable element with a Semantic HtmlPaginationMenu component
+	 * @param number $page the active page number
+	 * @param number $items_per_page The number of items per page
+	 * @param number $pages_visibles The number of visible pages in the Pagination component
+	 * @return DataTable
+	 */
+	public function autoPaginate($page=1,$items_per_page=10,$pages_visibles=4){
+		$this->_pagination=new Pagination($items_per_page,$pages_visibles,$page);
+		return $this;
 	}
 
 
 
+	/**
+	 * @param array $compileParts
+	 * @return DataTable
+	 */
 	public function refresh($compileParts=["tbody"]){
 		$this->_compileParts=$compileParts;
 		return $this;
@@ -274,6 +367,83 @@ class DataTable extends Widget {
 	 */
 	public function setTargetSelector($_targetSelector) {
 		$this->_targetSelector=$_targetSelector;
+		return $this;
+	}
+
+	public function getRefreshSelector() {
+		if(isset($this->_refreshSelector))
+			return $this->_refreshSelector;
+		return "#".$this->identifier." tbody";
+	}
+
+	/**
+	 * @param string $_refreshSelector
+	 * @return DataTable
+	 */
+	public function setRefreshSelector($_refreshSelector) {
+		$this->_refreshSelector=$_refreshSelector;
+		return $this;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * @see \Ajax\common\Widget::show()
+	 */
+	public function show($modelInstance){
+		if(\is_array($modelInstance)){
+			if(\is_array(array_values($modelInstance)[0]))
+				$modelInstance=\json_decode(\json_encode($modelInstance), FALSE);
+		}
+		$this->_modelInstance=$modelInstance;
+	}
+
+	public function getRowClass() {
+		return $this->_rowClass;
+	}
+
+	/**
+	 * Sets the default row class (tr class)
+	 * @param string $_rowClass
+	 * @return DataTable
+	 */
+	public function setRowClass($_rowClass) {
+		$this->_rowClass=$_rowClass;
+		return $this;
+	}
+
+	/**
+	 * Sets the message displayed when there is no record
+	 * @param mixed $_emptyMessage
+	 * @return DataTable
+	 */
+	public function setEmptyMessage($_emptyMessage) {
+		$this->_emptyMessage=$_emptyMessage;
+		return $this;
+	}
+
+	public function setSortable($colIndex=NULL) {
+		$this->_sortable=$colIndex;
+		return $this;
+	}
+
+	public function setActiveRowSelector($class="active",$event="click",$multiple=false){
+		$this->_self->setActiveRowSelector($class,$event,$multiple);
+		return $this;
+	}
+
+	public function hideColumn($colIndex){
+		if(!\is_array($this->_hiddenColumns))
+			$this->_hiddenColumns=[];
+		$this->_hiddenColumns[]=$colIndex;
+		return $this;
+	}
+
+	public function setColWidth($colIndex,$width){
+		$this->_colWidths[$colIndex]=$width;
+		return $this;
+	}
+	public function setColWidths($_colWidths) {
+		$this->_colWidths = $_colWidths;
 		return $this;
 	}
 }

@@ -58,9 +58,6 @@ abstract class Widget extends HtmlDoubleElement {
 		$this->_template="%wrapContentBefore%%content%%wrapContentAfter%";
 		$this->setModel($model);
 		if(isset($modelInstance)){
-			if(\is_array($modelInstance)){
-				$modelInstance=\json_decode(\json_encode($modelInstance), FALSE);
-			}
 			$this->show($modelInstance);
 		}
 		$this->_generated=false;
@@ -69,6 +66,7 @@ abstract class Widget extends HtmlDoubleElement {
 	protected function _init($instanceViewer,$contentKey,$content,$edition){
 		$this->_instanceViewer=$instanceViewer;
 		$this->content=[$contentKey=>$content];
+		$this->_self=$content;
 		$this->_toolbarPosition=PositionInTable::BEFORETABLE;
 		$this->_edition=$edition;
 	}
@@ -78,7 +76,12 @@ abstract class Widget extends HtmlDoubleElement {
 	 * @return int|string
 	 */
 	protected function _getIndex($fieldName){
-		return $fieldName;
+		$index=$fieldName;
+		if(\is_string($fieldName)){
+			$fields=$this->_instanceViewer->getVisibleProperties();
+			$index=\array_search($fieldName, $fields);
+		}
+		return $index;
 	}
 
 	protected function _getFieldIdentifier($prefix,$name=""){
@@ -96,6 +99,9 @@ abstract class Widget extends HtmlDoubleElement {
 	abstract protected  function _setToolbarPosition($table,$captions=NULL);
 
 	public function show($modelInstance){
+		if(\is_array($modelInstance)){
+			$modelInstance=\json_decode(\json_encode($modelInstance), FALSE);
+		}
 		$this->_modelInstance=$modelInstance;
 	}
 
@@ -427,12 +433,16 @@ abstract class Widget extends HtmlDoubleElement {
 		return $this;
 	}
 
-	public function asModal($header){
+	public function asModal($header=null){
 		$modal=new HtmlModal("modal-".$this->identifier,$header);
 		$modal->setContent($this);
 		if(isset($this->_form)){
 			$this->_form->onSuccess($modal->jsHide());
 		}
 		return $modal;
+	}
+
+	public function addToProperty($name, $value, $separator=" ") {
+		return $this->getHtmlComponent()->addToProperty($name,$value,$separator);
 	}
 }
