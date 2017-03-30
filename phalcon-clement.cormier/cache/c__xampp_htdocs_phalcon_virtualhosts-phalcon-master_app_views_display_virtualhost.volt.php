@@ -1,0 +1,2 @@
+<?= $q['servhost'] ?>
+<?= $q['virtualhost'] ?>
